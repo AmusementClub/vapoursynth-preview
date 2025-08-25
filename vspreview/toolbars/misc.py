@@ -13,6 +13,9 @@ from vspreview.utils import (
     add_shortcut, debug, fire_and_forget, set_qobject_names, set_status_label,
 )
 
+from asyncio import get_event_loop
+from functools import partial
+
 
 class MiscToolbar(AbstractToolbar):
     storable_attrs : Sequence[str] = []
@@ -191,11 +194,16 @@ class MiscToolbar(AbstractToolbar):
                 self.main.toolbars.debug.toggle_button.click()
             self.main.toolbars.debug.toggle_button.setVisible(False)
 
-    @fire_and_forget    
     @set_status_label(label='Saving')
     def save_as_png(self, path: Path) -> None:
         image = self.main.current_output.graphics_scene_item.image()
-        image.save(str(path), 'PNG', self.main.PNG_COMPRESSION_LEVEL)
+        image_copy = image.copy()
+        loop = get_event_loop()
+        loop.run_in_executor(None, partial(
+            image_copy.save,
+            str(path),
+            'PNG',
+            self.main.PNG_COMPRESSION_LEVEL))
 
     def __getstate__(self) -> Mapping[str, Any]:
         state = {
